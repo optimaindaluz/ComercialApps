@@ -16,12 +16,19 @@ let _pool: Pool | null = null;
 export async function getDb() {
   if (!_db && process.env.SUPABASE_DB_URL) {
     try {
+      const maskedUrl = process.env.SUPABASE_DB_URL.replace(/:([^:@]+)@/, ':***@');
+      console.log("[Database] Connecting to:", maskedUrl);
       _pool = new Pool({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
       _db = drizzle(_pool);
+      await _pool.query('SELECT 1');
+      console.log("[Database] Connected successfully");
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.error("[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
+  } else if (!process.env.SUPABASE_DB_URL) {
+    console.error("[Database] SUPABASE_DB_URL is not set!");
   }
   return _db;
 }
@@ -75,9 +82,14 @@ export async function createCommercial(data: InsertCommercial) {
 
 export async function getCommercialByUsername(username: string) {
   const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(commercials).where(eq(commercials.username, username)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  if (!db) { console.error('[Database] getCommercialByUsername: no DB connection'); return undefined; }
+  try {
+    const result = await db.select().from(commercials).where(eq(commercials.username, username)).limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  } catch (error) {
+    console.error('[Database] getCommercialByUsername error:', error);
+    throw error;
+  }
 }
 
 export async function getCommercialByEmail(email: string) {
