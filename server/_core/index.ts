@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerFormRoutes } from "../formRoutes";
 import { registerPrivacyRoute } from "../privacyRoute";
 import { registerSupportRoute } from "../supportRoute";
+import { registerEnergyRoutes } from "../energyRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 
@@ -61,6 +62,7 @@ async function startServer() {
   registerFormRoutes(app);
   registerPrivacyRoute(app);
   registerSupportRoute(app);
+  registerEnergyRoutes(app);
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
