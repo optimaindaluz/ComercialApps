@@ -42,24 +42,59 @@ function calculateModern(parameters: any, rules: any, invoice: InvoiceInput) {
   const days = Math.max(1, n(invoice.billingDays, 1));
   const powerPrices = parameters?.power_prices ?? {};
   const energyPrices = parameters?.energy_prices ?? {};
+
+  // Igual que las hojas modernas del Excel: potencia contratada x precio diario x días.
   const power = n(invoice.powerP1Kw) * days * n(powerPrices.p1)
     + n(invoice.powerP2Kw) * days * n(powerPrices.p2)
     + n(invoice.powerP3Kw) * days * n(powerPrices.p3);
+
+  // Consumo por periodos. El "servicio de ajuste" de las hojas que lo incluyen
+  // figura como un importe fijo (p. ej. 0,0017 €), no como €/kWh.
   const energy = n(invoice.kwhP1) * n(energyPrices.p1)
     + n(invoice.kwhP2) * n(energyPrices.p2)
-    + n(invoice.kwhP3) * n(energyPrices.p3)
-    + (n(invoice.kwhP1) + n(invoice.kwhP2) + n(invoice.kwhP3)) * n(parameters?.adjustment_price);
+    + n(invoice.kwhP3) * n(energyPrices.p3);
+  const adjustmentCharge = n(parameters?.adjustment_price);
+
   const fixedCharges = Array.isArray(parameters?.fixed_charges)
     ? parameters.fixed_charges.reduce((sum: number, item: any) => sum + n(item?.amount), 0) : 0;
+
+  // En las plantillas modernas el impuesto eléctrico se aplica a potencia + energía,
+  // antes de bono social, servicios, alquiler, compensación y cargo de ajuste.
   const electricityTaxRate = n(rules?.electricity_tax_rate, 0.0511269632);
   const electricityTax = Math.max(0, power + energy) * electricityTaxRate;
+
   const excessCredit = n(invoice.exportedKwh) * n(parameters?.excess_price);
   const rental = n(invoice.equipmentRental);
-  const otherCosts = n(invoice.otherCosts) + n(invoice.socialBonus) + n(invoice.services);
-  const taxable = Math.max(0, power + energy + electricityTax + fixedCharges + rental + otherCosts - excessCredit);
+
+  // El bono social se arrastra en la plantilla. "Otros" y "Servicios" de la factura
+  // actual no se copian a la nueva oferta salvo regla expresa; los packs de la nueva
+  // compañía ya están en fixed_charges.
+  const passThroughOtherCosts = rules?.pass_through_other_costs ? n(invoice.otherCosts) : 0;
+  const passThroughServices = rules?.pass_through_services ? n(invoice.services) : 0;
+  const socialBonus = n(invoice.socialBonus);
+  const passThrough = socialBonus + passThroughOtherCosts + passThroughServices;
+
+  const taxable = Math.max(0,
+    power + energy + adjustmentCharge + electricityTax + fixedCharges + rental + passThrough - excessCredit,
+  );
   const vatRate = invoice.vatRate === undefined ? n(rules?.default_vat_rate, 0.1) : n(invoice.vatRate);
   const vat = taxable * vatRate;
-  return { power: round(power), energy: round(energy), fixedCharges: round(fixedCharges), electricityTax: round(electricityTax), excessCredit: round(excessCredit), equipmentRental: round(rental), otherCosts: round(otherCosts), vatRate: round(vatRate, 6), vat: round(vat), total: round(taxable + vat, 2) };
+
+  return {
+    power: round(power),
+    energy: round(energy),
+    adjustmentCharge: round(adjustmentCharge),
+    fixedCharges: round(fixedCharges),
+    electricityTax: round(electricityTax),
+    excessCredit: round(excessCredit),
+    equipmentRental: round(rental),
+    socialBonus: round(socialBonus),
+    otherCosts: round(passThroughOtherCosts),
+    services: round(passThroughServices),
+    vatRate: round(vatRate, 6),
+    vat: round(vat),
+    total: round(taxable + vat, 2),
+  };
 }
 
 function calculateLegacy(parameters: any, rules: any, invoice: InvoiceInput) {
