@@ -86,6 +86,16 @@ export function registerEnergyRoutes(app: Express) {
           exportedKwh: numberOrUndefined(invoice.exportedKwh), equipmentRental: numberOrUndefined(invoice.equipmentRental),
           otherCosts: numberOrUndefined(invoice.otherCosts), socialBonus: numberOrUndefined(invoice.socialBonus), services: numberOrUndefined(invoice.services),
           vatRate: numberOrUndefined(invoice.vatRate),
+          currentPowerP1Amount: numberOrUndefined(invoice.currentPowerP1Amount),
+          currentPowerP2Amount: numberOrUndefined(invoice.currentPowerP2Amount),
+          currentPowerP3Amount: numberOrUndefined(invoice.currentPowerP3Amount),
+          currentEnergyP1Amount: numberOrUndefined(invoice.currentEnergyP1Amount),
+          currentEnergyP2Amount: numberOrUndefined(invoice.currentEnergyP2Amount),
+          currentEnergyP3Amount: numberOrUndefined(invoice.currentEnergyP3Amount),
+          currentElectricityTax: numberOrUndefined(invoice.currentElectricityTax),
+          currentDiscount: numberOrUndefined(invoice.currentDiscount),
+          currentExcessCredit: numberOrUndefined(invoice.currentExcessCredit),
+          currentVatAmount: numberOrUndefined(invoice.currentVatAmount),
         },
       };
       res.status(201).json(await energy.calculateAndSaveComparison(commercial.id, clean));
