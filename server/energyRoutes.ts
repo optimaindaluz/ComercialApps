@@ -100,14 +100,12 @@ export function registerEnergyRoutes(app: Express) {
     } catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : "Error interno" }); }
   });
 
-  app.put("/api/energy/admin/rates/:id", async (req, res) => {
+  app.post("/api/energy/admin/companies", async (req, res) => {
     try {
       const admin = await getAdmin(req);
       if (!admin) return res.status(401).json({ error: "No autorizado" });
-      const id = Number(req.params.id);
-      if (!Number.isFinite(id)) return res.status(400).json({ error: "ID no válido" });
-      res.json(await energy.updateRate(id, req.body ?? {}));
-    } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : "No se pudo guardar" }); }
+      res.status(201).json(await energy.createCompany(req.body ?? {}));
+    } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : "No se pudo crear la compañía" }); }
   });
 
   app.put("/api/energy/admin/companies/:id", async (req, res) => {
@@ -117,6 +115,24 @@ export function registerEnergyRoutes(app: Express) {
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) return res.status(400).json({ error: "ID no válido" });
       res.json(await energy.updateCompany(id, req.body ?? {}));
+    } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : "No se pudo guardar" }); }
+  });
+
+  app.post("/api/energy/admin/rates", async (req, res) => {
+    try {
+      const admin = await getAdmin(req);
+      if (!admin) return res.status(401).json({ error: "No autorizado" });
+      res.status(201).json(await energy.createRate(req.body ?? {}));
+    } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : "No se pudo crear la tarifa" }); }
+  });
+
+  app.put("/api/energy/admin/rates/:id", async (req, res) => {
+    try {
+      const admin = await getAdmin(req);
+      if (!admin) return res.status(401).json({ error: "No autorizado" });
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ error: "ID no válido" });
+      res.json(await energy.updateRate(id, req.body ?? {}));
     } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : "No se pudo guardar" }); }
   });
 
