@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Optima Indaluz</title>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(window.location.search);
+
+  const qr = params.get("qr");
+  const type = params.get("type");
+
+  if (!qr) {
+    document.body.innerHTML =
+      "<h2>Enlace no válido</h2><p>No se ha encontrado el código QR.</p>";
+  } else {
+    const base = "https://comercialapps.onrender.com";
+
+    const destination =
+      type === "business" || type === "negocio"
+        ? `${base}/form/negocio/${encodeURIComponent(qr)}`
+        : `${base}/form/${encodeURIComponent(qr)}`;
+
+    window.location.replace(destination);
+  }
+</script>
+</body>
+</html>
