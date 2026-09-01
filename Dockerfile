@@ -3,8 +3,8 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Instalar pnpm
-RUN npm install -g pnpm
+# Instalar la misma versión de pnpm declarada en package.json
+RUN npm install -g pnpm@9.12.0
 
 # Copiar archivos de dependencias
 COPY package.json pnpm-lock.yaml ./
@@ -23,7 +23,8 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-RUN npm install -g pnpm
+# Mantener pnpm alineado con package.json también en producción
+RUN npm install -g pnpm@9.12.0
 
 # Copiar archivos de dependencias
 COPY package.json pnpm-lock.yaml ./
