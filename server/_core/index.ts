@@ -2,12 +2,14 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import { sql } from "drizzle-orm";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerFormRoutes } from "../formRoutes";
 import { registerPrivacyRoute } from "../privacyRoute";
 import { registerSupportRoute } from "../supportRoute";
 import { appRouter } from "../routers";
+import { getDb } from "../db";
 import { createContext } from "./context";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -62,8 +64,49 @@ async function startServer() {
   registerPrivacyRoute(app);
   registerSupportRoute(app);
 
+  // Comprobación ligera: confirma que el proceso de Render está vivo.
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, timestamp: Date.now() });
+    res.json({ ok: true, render: "ok", timestamp: Date.now() });
+  });
+
+  // Comprobación completa: confirma Render + conexión real con Supabase/Postgres.
+  app.get("/api/health/full", async (_req, res) => {
+    const startedAt = Date.now();
+
+    try {
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({
+          ok: false,
+          render: "ok",
+          database: "error",
+          error: "Database connection unavailable",
+          responseTimeMs: Date.now() - startedAt,
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
+      await db.execute(sql`SELECT 1`);
+
+      res.json({
+        ok: true,
+        render: "ok",
+        database: "ok",
+        responseTimeMs: Date.now() - startedAt,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      console.error("[Health] Full health check failed:", error);
+      res.status(503).json({
+        ok: false,
+        render: "ok",
+        database: "error",
+        error: error instanceof Error ? error.message : "Unknown database error",
+        responseTimeMs: Date.now() - startedAt,
+        timestamp: Date.now(),
+      });
+    }
   });
 
   app.use(
